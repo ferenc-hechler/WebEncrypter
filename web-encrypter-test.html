@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			label,
+			button {
+				display: block;
+				margin: 2em;
+			}
+			.formfield * {
+ 				vertical-align: top;
+			}
+   		</style>
+		<script src="js/openpgp.min.js"></script>
+		<script>
+			
+			window.onload = function () {
+				document.querySelector('#btencrypt').addEventListener('click', startencrypt);
+				document.querySelector('#btdecrypt').addEventListener('click', startdecrypt);
+			};
+
+			const BEGIN_PGP_MSG = "-----BEGIN PGP MESSAGE-----"
+			const END_PGP_MSG = "-----END PGP MESSAGE-----"
+
+			function startencrypt () {
+				console.log("encrypt start");
+				(async () => {
+					plaintext = document.getElementById("plaintext").value;
+					password = document.getElementById("password").value;
+	
+					message = await openpgp.createMessage({text: plaintext})
+					encrypted = await openpgp.encrypt({
+					        message, // input as Message object
+					        passwords: [password], // multiple passwords possible
+					        format: 'armored' // ASCII armor (use 'binary' for Uint8Array)  
+					});
+					encrypted = encrypted.replace(BEGIN_PGP_MSG+"\n\n", ""); 
+					encrypted = encrypted.replace("\n"+END_PGP_MSG, ""); 
+					document.getElementById("encryptedtext").textContent = encrypted;
+					console.log("encryptedtext set");
+				})();
+				console.log("encrypt finished");
+			}		
+			 
+			function startdecrypt () {
+				console.log("decrypt start");
+				(async () => {
+					encryptedtext = document.getElementById("encryptedtext").value;
+					encryptedtext = BEGIN_PGP_MSG+"\n\n" + encryptedtext + "\n"+END_PGP_MSG;
+					password = document.getElementById("password").value;
+	
+					const encryptedMessage = await openpgp.readMessage({
+				        armoredMessage: encryptedtext // use binaryMessage for UInt8Array
+				    });
+	
+					const { data: decrypted } = await openpgp.decrypt({
+				        message: encryptedMessage,
+				        passwords: [password], // decrypt with password
+				        format: 'armored' 
+				    });
+				    	
+					document.getElementById("decryptedtext").textContent = decrypted;
+					console.log("secryptedtext set");
+				})();
+				console.log("decrypt finished");
+			}		
+		
+		</script>
+		<!--
+		-->
+	</head>
+	<body>
+		<h1>WebEncrypter Test</h1>
+		<p>link: <a href="web-encrypter-test.html">home</a></p>
+		<p>link: <a href="README.md">readme</a></p>
+		
+		<form>
+			<p class="formfield">
+			<label for="plaintext">Plain-Text:
+				<textarea id="plaintext" name="plaintext" cols="40" rows="6">This is the plaintext.</textarea>
+			</label>
+			</p>
+			
+			<label for="password">Password: 
+				<input type="password" id="password" name="password" value="geheim" size="40">
+			</label>
+
+			<button type="button" id="btencrypt">Encrypt</button>
+
+		    <label>Encrypted:
+		    	<output id="encryptedtext">(press Encrypt to fill)</output>
+		  	</label> 
+			
+			<button type="button" id="btdecrypt">Decrypt</button> 
+			 
+		    <label>Decrypted:
+		    	<output id="decryptedtext">(press Decrypt to fill)</output>
+		  	</label> 
+
+		</form>
+
+	</body>
+</html>
